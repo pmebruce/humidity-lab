@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2149d8">
+  <meta name="description" content="用乾濕球溫度或溫度與相對濕度，計算濕空氣性質、評估表面結露、升降溫與加除濕需求，並在濕空氣圖顯示 A 到 B 過程。可離線使用。">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="濕度計算">
+  <title>濕度計算｜濕空氣圖</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#conditions">跳至輸入條件</a>
+  <header class="app-header">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">濕</span><div><h1>濕度計算</h1><p>PSYCHROMETRICS</p></div></div>
+    <div class="header-actions"><span id="offline-status" class="offline-status">即時計算</span><button id="install-button" class="button quiet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg><span>加入桌面</span></button></div>
+  </header>
+  <main class="app-shell">
+    <div id="update-banner" class="update-banner" hidden>新版本已準備好。<button id="update-button" class="button">更新 App</button></div>
+    <div class="workspace">
+      <section class="input-panel panel" id="conditions" aria-labelledby="input-title">
+        <div class="panel-heading"><h2 id="input-title">輸入條件</h2><label class="compare-switch"><input type="checkbox" id="compare-toggle"><span class="switch-track" aria-hidden="true"></span><span>兩組比較</span></label></div>
+        <div id="condition-tabs" class="condition-tabs" role="group" aria-label="選擇編輯條件" hidden><button data-condition="A" aria-pressed="true"><span class="condition-dot a"></span>條件 A</button><button data-condition="B" aria-pressed="false"><span class="condition-dot b"></span>條件 B</button></div>
+        <p id="generated-b-note" class="generated-b-note" hidden>條件 B 由下方工程過程自動產生。</p>
+        <fieldset class="mode-options"><legend>輸入方式</legend><label><input type="radio" name="input-mode" value="rh" checked><span>溫度 + 相對濕度</span></label><label><input type="radio" name="input-mode" value="wb"><span>乾球 + 濕球</span></label></fieldset>
+        <div class="fields-grid">
+          <div class="field"><label for="input-t">乾球溫度 <span>Tdb</span></label><div class="number-input"><button type="button" class="sign-button" data-sign="t" aria-label="切換乾球溫度正負號" title="切換正負號">±</button><input id="input-t" data-field="t" type="text" inputmode="decimal" value="30" autocomplete="off" spellcheck="false" aria-describedby="input-errors"><span>°C</span></div></div>
+          <div class="field" id="rh-field"><label for="input-rh">相對濕度 <span>RH</span></label><div class="number-input"><input id="input-rh" data-field="rh" type="text" inputmode="decimal" value="60" autocomplete="off" spellcheck="false" aria-describedby="input-errors"><span>%</span></div></div>
+          <div class="field" id="tw-field" hidden><label for="input-tw">濕球溫度 <span>Twb</span></label><div class="number-input"><button type="button" class="sign-button" data-sign="tw" aria-label="切換濕球溫度正負號" title="切換正負號">±</button><input id="input-tw" data-field="tw" type="text" inputmode="decimal" value="23.9" autocomplete="off" spellcheck="false" aria-describedby="input-errors"><span>°C</span></div></div>
+        </div>
+        <div class="rh-slider-wrap" id="rh-slider-wrap"><input id="rh-slider" type="range" min="0" max="100" step="0.1" value="60" aria-label="調整相對濕度"><div><span>0%</span><span>50%</span><span>100%</span></div></div>
+        <div class="fields-grid secondary-fields">
+          <div class="field"><label for="input-p">絕對壓力 <span>P</span></label><div class="number-input"><input id="input-p" data-field="p" type="text" inputmode="decimal" value="100" autocomplete="off" spellcheck="false" aria-describedby="input-errors"><span>kPa</span></div></div>
+          <div class="field"><label for="input-v">空間體積 <span>V</span></label><div class="number-input"><input id="input-v" data-field="v" type="text" inputmode="decimal" value="1" autocomplete="off" spellcheck="false" aria-describedby="input-errors"><span>m³</span></div></div>
+        </div>
+        <div id="input-errors" class="input-errors" role="status" aria-live="polite" hidden></div>
+        <div class="input-actions"><button id="example-button" class="button primary">載入照片範例</button><button id="reset-button" class="button quiet">重設</button></div>
+        <p class="input-note">壓力使用絕對壓力。海平面標準值為 101.325 kPa；照片範例使用 100 kPa。</p>
+        <div class="dew-insight" id="dew-insight"><span class="insight-label">結露參考</span><p>表面溫度低於 <strong id="dew-threshold">—</strong> 時，可能開始結露。</p><span id="dew-extra">相對濕度會隨溫度改變，露點反映水蒸氣分壓。</span></div>
+      </section>
+      <div class="results-area">
+        <section class="metrics" aria-label="目前條件的主要結果">
+          <article class="metric featured"><div class="metric-label">相對濕度 <span class="active-tag">A</span></div><div class="metric-value"><span id="result-rh">—</span><small>%</small></div><div class="metric-foot" id="result-rh-caption">RH</div></article>
+          <article class="metric"><div class="metric-label" id="dew-metric-label">露點溫度</div><div class="metric-value"><span id="result-dp">—</span><small>°C</small></div><div class="metric-foot">飽和溫度</div></article>
+          <article class="metric"><div class="metric-label">含濕量</div><div class="metric-value"><span id="result-w">—</span></div><div class="metric-foot">g 水 / kg 乾空氣</div></article>
+          <article class="metric"><div class="metric-label">濕空氣焓</div><div class="metric-value"><span id="result-h">—</span></div><div class="metric-foot">kJ / kg 乾空氣</div></article>
+        </section>
+        <section class="chart-panel panel" aria-labelledby="chart-title">
+          <div class="chart-heading"><div><h2 id="chart-title">濕空氣圖</h2><p id="chart-pressure">總壓力 100.000 kPa</p></div><button id="focus-button" class="button quiet compact" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6M8 12h8m-4-4v8"/></svg>聚焦狀態點</button></div>
+          <div class="chart-legend"><span><i class="line-key saturation"></i>100% 飽和線</span><span><i class="line-key relative"></i>相對濕度線</span><span id="process-legend"><i class="line-key process"></i><span id="process-legend-label">A → B 過程</span></span><span id="surface-legend"><i class="line-key surface"></i>表面溫度</span><label><input id="enthalpy-toggle" type="checkbox" checked><i class="line-key enthalpy"></i>等焓線</label><label><input id="wetbulb-toggle" type="checkbox"><i class="line-key wetbulb"></i>等濕球線</label><label><input id="dewline-toggle" type="checkbox" checked>露點輔助線</label></div>
+          <div id="chart-notice" class="chart-notice" role="status" hidden></div>
+          <div id="psych-chart" class="psych-chart"></div>
+          <div id="point-readouts" class="point-readouts"></div>
+          <p id="chart-help" class="chart-help">橫軸為乾球溫度，縱軸為含濕量。紫色箭線是 A → B 工程過程；冷卻越過露點時，路徑會轉沿 100% 飽和線並顯示冷凝水。</p>
+        </section>
+      </div>
+    </div>
+    <section class="engineering-section panel" aria-labelledby="engineering-title">
+      <div class="section-heading engineering-heading"><div><h2 id="engineering-title">工程評估</h2><p>以條件 A 為起點，判斷表面結露並建立可追溯的 A → B 過程。</p></div><span class="section-kicker">PROCESS</span></div>
+      <div class="engineering-grid">
+        <article class="engineering-card" aria-labelledby="condensation-title">
+          <div class="card-title"><span>01</span><div><h3 id="condensation-title">表面結露判斷</h3><p>比較表面溫度與條件 A 的露／霜點。</p></div></div>
+          <div class="engineering-fields">
+            <label class="compact-field" for="surface-t"><span>表面溫度 <small>Ts</small></span><span class="compact-number-input"><button type="button" id="surface-sign" aria-label="切換表面溫度正負號">±</button><input id="surface-t" type="text" inputmode="decimal" value="20" autocomplete="off" spellcheck="false"><b>°C</b></span></label>
+            <label class="compact-field" for="safety-margin"><span>安全裕量 <small>ΔTsafe</small></span><span class="compact-number-input"><input id="safety-margin" type="text" inputmode="decimal" value="2" autocomplete="off" spellcheck="false"><b>°C</b></span></label>
+          </div>
+          <div class="status-row"><span id="condensation-status" class="status-pill neutral"><i></i><span>等待計算</span></span><small>判斷基準：條件 A</small></div>
+          <div class="engineering-results">
+            <div><span>露點差</span><strong id="dew-margin-result">—</strong><small>Ts − Tdp · °C</small></div>
+            <div><span>表面相對濕度</span><strong id="surface-rh-result">—</strong><small>達 100% 即飽和</small></div>
+            <div><span>最低建議表面溫度</span><strong id="required-surface-result">—</strong><small>Tdp + 安全裕量 · °C</small></div>
+          </div>
+          <div id="condensation-error" class="inline-error" role="status" hidden></div>
+          <p id="condensation-note" class="model-note">實際判斷請量測可能最冷的表面；冷媒或冷水溫度只能作為初步參考。</p>
+        </article>
+
+        <article class="engineering-card process-card" aria-labelledby="process-title">
+          <div class="card-title"><span>02–03</span><div><h3 id="process-title">升降溫與加／除濕</h3><p>選擇過程，條件 B 與圖上路徑會即時更新。</p></div></div>
+          <fieldset class="process-options"><legend>過程模式</legend><label><input type="radio" name="process-mode" value="temperature" checked><span>升／降溫</span></label><label><input type="radio" name="process-mode" value="moisture"><span>目標溫濕度</span></label><label><input type="radio" name="process-mode" value="independent"><span>獨立 A／B</span></label></fieldset>
+          <div class="engineering-fields process-fields">
+            <label class="compact-field" for="process-target-t"><span>B 點乾球 <small>Tdb,B</small></span><span class="compact-number-input"><button type="button" id="process-t-sign" aria-label="切換 B 點乾球溫度正負號">±</button><input id="process-target-t" type="text" inputmode="decimal" value="20" autocomplete="off" spellcheck="false"><b>°C</b></span></label>
+            <label class="compact-field" id="process-target-rh-wrap" for="process-target-rh" hidden><span>B 點相對濕度 <small>RHB</small></span><span class="compact-number-input"><input id="process-target-rh" type="text" inputmode="decimal" value="50" autocomplete="off" spellcheck="false"><b>%</b></span></label>
+          </div>
+          <div class="status-row"><span id="process-status" class="status-pill process"><i></i><span>A → B</span></span><small id="process-status-detail">定壓、含濕量不變</small></div>
+          <div class="engineering-results process-results">
+            <div><span>B 點相對濕度</span><strong id="process-rh-result">—</strong><small>% RH</small></div>
+            <div><span id="process-water-label">冷凝水預估</span><strong id="process-water-result">—</strong><small>依條件 A 空氣量 · g</small></div>
+            <div><span>B 點空氣體積</span><strong id="process-volume-result">—</strong><small>定壓、同乾空氣質量 · m³</small></div>
+          </div>
+          <div id="process-error" class="inline-error" role="status" hidden></div>
+          <p id="process-stage-note" class="process-stage-note"></p>
+          <p id="process-model-note" class="model-note">模型採定壓且保持條件 A 的乾空氣質量；密閉定容容器需改用定容模型。</p>
+        </article>
+      </div>
+    </section>
+    <section class="properties-section panel" aria-labelledby="properties-title">
+      <div class="section-heading"><div><h2 id="properties-title">物性明細<span id="comparison-label" hidden>與比較</span></h2><p id="comparison-note">焓、比容與含濕量以每 kg 乾空氣為基準。</p></div><span class="section-kicker">SI UNITS</span></div>
+      <div class="table-scroll" tabindex="0" aria-label="物性結果表，可左右捲動"><table id="property-table"><caption class="sr-only">完整濕空氣性質與條件比較</caption><thead id="property-head"></thead><tbody id="property-body"></tbody></table></div>
+      <p class="table-note">「乾空氣分量密度」使用乾空氣分壓；「同溫同壓純乾空氣密度」假設整個壓力皆由乾空氣提供。水蒸氣質量以實際水蒸氣分壓計算。</p>
+    </section>
+    <details class="formula-section panel" id="formula-section"><summary><span>計算公式與依據</span><span class="summary-plus" aria-hidden="true">+</span></summary><div class="formula-content"><p class="formula-intro">採理想濕空氣模型與 ASHRAE 關係式。T 為 °C，P 與 pv 為 kPa，W 為 kg 水／kg 乾空氣。</p><div id="formula-steps" class="formula-grid"></div><div class="method-notes"><p>乾球範圍 −20～80 °C；絕對壓力範圍 20～200 kPa。飽和壓力在 0.01 °C 以下以冰面為基準，低於冰點的飽和溫度稱為霜點。濕球使用熱力學濕球關係式；實測值會受通風與感測方式影響。</p><p>工程過程採定壓並保持條件 A 的乾空氣質量。升降溫先保持 W；冷卻越過露／霜點後沿飽和線移動，凝結量為 mda × (WA − WB)。目標溫濕度模式依序執行調溫與定溫調濕。</p><p>濕空氣比熱為固定含濕量下的定壓比熱，不以「焓 ÷ 溫度」代替。不同壓力的獨立條件會分別繪圖；本版不進行兩股空氣混合計算。</p><p>公式參考：<a href="https://psychrometrics.github.io/psychrolib/api_docs.html" target="_blank" rel="noopener noreferrer">PsychroLib / ASHRAE Fundamentals 第 1 章</a>，<a href="https://psychrometrics.github.io/psychrolib/_modules/psychrolib.html" target="_blank" rel="noopener noreferrer">公式實作與 SI 單位定義</a>。</p></div></div></details>
+    <footer class="app-footer"><span>濕度計算</span><span id="footer-offline">數值與圖表在裝置上計算</span></footer>
+  </main>
+  <dialog id="install-dialog"><div class="dialog-heading"><h2>加入桌面</h2><button id="close-install" class="icon-button" aria-label="關閉">×</button></div><div class="install-app"><img src="./icons/apple-touch-icon.png" width="64" height="64" alt="濕度計算圖示"><div><strong>濕度計算</strong><p>開啟後即可計算與查圖</p></div></div><div id="install-instructions"><p><strong>iPhone / iPad</strong></p><ol><li>在 Safari 開啟此頁。</li><li>點選「分享」，再選「加入主畫面」。</li><li>若出現「打開為網頁 App」，請保持開啟，再點「加入」。</li></ol><p><strong>Android / 電腦</strong></p><p>在 Chrome 或 Edge 選單中，選擇「安裝應用程式」或「新增至主畫面」。</p></div><p class="install-note">首次請連網完整開啟一次；顯示「離線可用」後，可在無網路時使用。</p><button id="install-done" class="button primary full-width">知道了</button></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <noscript><div class="noscript">此計算器需要 JavaScript，請在瀏覽器中開啟 JavaScript 後重新載入。</div></noscript>
+</body>
+</html>
