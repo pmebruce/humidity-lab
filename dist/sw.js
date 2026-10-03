@@ -1,6 +1,6 @@
 // Bump the cache name whenever any precached asset changes.
 const CACHE_PREFIX = 'humidity-lab-';
-const CACHE_NAME = 'humidity-lab-20260923-v3-type2';
+const CACHE_NAME = 'humidity-lab-20260923-v3-type2-hero1';
 const ASSETS = [
   './', './index.html', './styles.css', './app.js', './psychrometrics.js', './process.js', './chart.js',
   './manifest.webmanifest', './icons/icon-192.png',
